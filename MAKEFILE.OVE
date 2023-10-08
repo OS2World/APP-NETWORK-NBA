@@ -1,0 +1,58 @@
+#
+#       makefile for OS/2 Toolkit sample program
+#
+#-----------------------------------------------
+#       Definitions for MSC 5.1 Compiler
+#       /c              -- compile only (suppress linking)
+#       /A$(model)      -- Specifies memory model
+#       /Gs2            -- Disable stack probes, use 286 instructions
+#       /Zl             -- Remove default library info
+#       /DOS2           -- OS/2 environment
+#       /DDDL           -- use of DDL
+#       /W3             -- Maximum warning level
+#-----------------------------------------------
+#
+# model can be = lfu - large code, far  data, SS != DS
+#                lnu - large code, near data, SS != DS
+#                sfu - small code, far  data, SS != DS
+#                snu - small code, near data, SS != DS
+#
+# See MTDYNA.DOC for more details on this subject
+#
+model=lfu
+#
+# include paths - use multi-thread include files
+#
+XLNPATH=\xln\toolkit
+TK_INCL=$(XLNPATH)\include
+INCLUDE=-I. -I$(TK_INCL) -I\msc51\include\mt
+#
+# libpaths should be set in the LIB environment string
+#
+XLNLIBS=bsd43.lib crtlib.lib
+MSLIBS=doscalls.lib
+ALL_LIBS=$(XLNLIBS) $(MSLIBS)
+#
+# compile flags
+#
+CFLAGS=  /c /A$(model) /Ox /Zl /Gs2 /DDLL /DOS2 /W3 $(INCLUDE)
+#
+# link flags
+#
+LFLAGS= /NOD /MAP /NOI
+LINKCMD=$(LFLAGS) $** + \xln\toolkit\os2lib\crtexe.obj,$@,$*.map,$(ALL_LIBS)
+
+
+.c.obj:
+        cl $(CFLAGS) $*.c > $*.err
+
+nba.obj:	nba.c	nba.h 	name.h
+
+##### Link commands ######
+
+nba: 	nba.obj
+	link $(LINKCMD);
+	markexe WINDOWCOMPAT nba.exe
+
+
+

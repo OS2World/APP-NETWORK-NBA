@@ -1,0 +1,198 @@
+
+
+
+
+
+
+
+
+
+              OS/2 RCB Device Driver Interface
+
+
+                      Avnish Aggarwal
+
+
+
+
+
+
+_1.  _I_n_t_r_o_d_u_c_t_i_o_n
+
+     The OS/2 RCB driver supports the RCB  (Request  Control
+Block)  abstraction  -  the  kernel  interface to the TCP/IP
+transport.  A RCB driver installs as a standard OS/2  device
+driver.  It  gets called by client drivers (such as a socket
+driver, NFS Installable File System) via a direct  call,  as
+opposed  to  going through the standard device driver inter-
+face. More than one client may be using the  RCB  driver  at
+one time.
+
+     A client device driver performs a standard  DosDevIoctl
+to  the RCB driver to get the far address of a "RCB Handler"
+routine.  This routine is then passed RCBs for processing by
+the  RCB  stack.   At  present,  the RCB handler can only be
+called from protected mode.
+
+_2.  _R_C_B _D_r_i_v_e_r _C_o_n_f_i_g_u_r_a_t_i_o_n
+
+     The RCB  driver  gets  configuration  information  from
+NET.CFG.  The only item of interest to client drivers should
+be number of sockets supported. This is passed  back  during
+initialization. No information is passed from client drivers
+to the RCB driver.
+
+_3.  _R_C_B _D_r_i_v_e_r _I_n_t_i_a_l_i_z_a_t_i_o_n
+
+     The RCB driver will support a DosDevIoctl command  that
+is issued from a client driver during system initialization.
+The client does a DosOpen, DosDevIoctl(RcbLinkage), DosClose
+to  get  the  RCB  Handler  address   back  from the the RCB
+driver. (See below for details on RCBLinkage.)
+
+_4.  _R_C_B _H_a_n_d_l_e_r _i_n_t_e_r_f_a_c_e
+
+     The RCB handler is entered via a direct far  call.  The
+calling conventions are as follows:
+
+
+
+
+
+
+
+                        May 4, 1990
+
+
+
+
+
+                           - 2 -
+
+
+
+Entry
+=====
+
+ES:SI       Virtual address of RCB
+DS          DS of RCB driver
+
+Exit
+====
+
+AX:         immediate return code
+
+            0   - ok
+            1   - error
+
+
+
+     The RCB driver will exit via a far return only when the
+requested   operation has finished.  Depending on the opera-
+tion, it may block for an indefinite time.  If the immediate
+return code is not zero, an error is indicated.
+
+     All addresses in the RCB must be virtual addresses that
+are: a) locked down, and b) are GDT entries.  The RCB itself
+must be a valid virtual address that has been locked down.
+
+     The RCB driver does not distinguish   between  synchro-
+nous  and  asynchronous calls - it is upto the client driver
+to handle this feature.
+
+_5.  _R_c_b_L_i_n_k_a_g_e
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        May 4, 1990
+
+
+
+
+
+                           - 3 -
+
+
+
+
+Purpose:    Get RCB direct address
+            Get config. info (# of sockets supported)
+            Get DS (protect mode)
+
+Return Codes:
+            Standard codes returned by :
+
+            DosOpen()
+            DosDevIoctl()
+            DosClose()
+
+
+Request Packet:  (as sent by client driver)
+            Request header
+            Category (byte)         = 82h
+            Code (byte)             = 70h
+            Param Buffer Ptr (dword)= buffer must be 8 bytes long
+            Data Buffer Ptr (dword) = NULL
+
+
+Param Buffer : (as returned by the RCB driver)
+            WORD    - # of sessions supported by RCB driver
+            WORD    - RCB driver DS (protect mode)
+            DWORD   - RCB Handler address  (ring 0 protect mode address)
+
+
+_6.  _N_o_t_e_s
+
+1    Name of RCB driver  - TCPIP.OS2
+
+2    The client driver must be loaded after the RCB driver.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        May 4, 1990
+
+
